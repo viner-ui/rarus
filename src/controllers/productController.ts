@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import { ProductService } from '../services/productService';
 import { CreateProductRequest, UpdateProductRequest } from '../types';
+import { db } from '../config/database';
 
 export class ProductController {
   private productService: ProductService;
 
   constructor() {
-    this.productService = new ProductService();
+    this.productService = new ProductService(db);
   }
 
   async createProduct(req: Request, res: Response): Promise<void> {
@@ -21,7 +22,7 @@ export class ProductController {
 
   async updateProduct(req: Request, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id || '0');
       const data: UpdateProductRequest = req.body;
       const product = await this.productService.updateProduct(id, data);
       res.json(product);
@@ -32,7 +33,7 @@ export class ProductController {
 
   async deleteProduct(req: Request, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id || '0');
       await this.productService.deleteProduct(id);
       res.status(204).send();
     } catch (error) {
@@ -42,7 +43,7 @@ export class ProductController {
 
   async getActiveProductsByCategory(req: Request, res: Response): Promise<void> {
     try {
-      const categoryId = parseInt(req.params.categoryId);
+      const categoryId = parseInt(req.params.categoryId || '0');
       const products = await this.productService.getActiveProductsByCategory(categoryId);
       res.json(products);
     } catch (error) {
@@ -61,7 +62,7 @@ export class ProductController {
 
   async getProductById(req: Request, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id || '0');
       const product = await this.productService.getProductById(id);
       
       if (!product) {
@@ -77,7 +78,7 @@ export class ProductController {
 
   async getProductCountByCategory(req: Request, res: Response): Promise<void> {
     try {
-      const categoryId = parseInt(req.params.categoryId);
+      const categoryId = parseInt(req.params.categoryId || '0');
       const count = await this.productService.getProductCountByCategory(categoryId);
       res.json({ count });
     } catch (error) {

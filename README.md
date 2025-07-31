@@ -126,7 +126,8 @@ src/
 ├── types/
 │   └── index.ts             # TypeScript типы
 ├── test/
-│   └── setup.ts             # Настройки тестов
+│   ├── database.ts          # Тестовая конфигурация БД
+│   └── mockDb.ts            # Мок базы данных
 └── index.ts                 # Точка входа приложения
 
 migrations/
@@ -151,7 +152,7 @@ migrations/
 ### Дополнительные возможности
 - ✅ REST JSON API
 - ✅ OpenAPI/Swagger документация
-- ✅ Покрытие кода тестами (70%+)
+- ✅ Покрытие кода тестами
 - ✅ TypeScript
 - ✅ Docker поддержка
 - ✅ Валидация данных

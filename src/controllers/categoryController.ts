@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import { CategoryService } from '../services/categoryService';
 import { CreateCategoryRequest, UpdateCategoryRequest } from '../types';
+import { db } from '../config/database';
 
 export class CategoryController {
   private categoryService: CategoryService;
 
   constructor() {
-    this.categoryService = new CategoryService();
+    this.categoryService = new CategoryService(db);
   }
 
   async createCategory(req: Request, res: Response): Promise<void> {
@@ -21,7 +22,7 @@ export class CategoryController {
 
   async updateCategory(req: Request, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id || '0');
       const data: UpdateCategoryRequest = req.body;
       const category = await this.categoryService.updateCategory(id, data);
       res.json(category);
@@ -32,7 +33,7 @@ export class CategoryController {
 
   async deleteCategory(req: Request, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id || '0');
       await this.categoryService.deleteCategory(id);
       res.status(204).send();
     } catch (error) {
@@ -60,7 +61,7 @@ export class CategoryController {
 
   async getCategoryById(req: Request, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id || '0');
       const category = await this.categoryService.getCategoryById(id);
       
       if (!category) {

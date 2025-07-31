@@ -1,14 +1,16 @@
-import { db } from '../config/database';
 import { Product, ProductWithCategory, CreateProductRequest, UpdateProductRequest } from '../types';
+import { Knex } from 'knex';
 
 export class ProductService {
+  constructor(private db: Knex) {}
+
   async createProduct(data: CreateProductRequest): Promise<Product> {
-    const category = await db('categories').where({ id: data.category_id }).first();
+    const category = await this.db('categories').where({ id: data.category_id }).first();
     if (!category) {
       throw new Error('Category not found');
     }
 
-    const [product] = await db('products')
+    const [product] = await this.db('products')
       .insert({
         ...data,
         is_active: true,
@@ -22,13 +24,13 @@ export class ProductService {
 
   async updateProduct(id: number, data: UpdateProductRequest): Promise<Product> {
     if (data.category_id) {
-      const category = await db('categories').where({ id: data.category_id }).first();
+      const category = await this.db('categories').where({ id: data.category_id }).first();
       if (!category) {
         throw new Error('Category not found');
       }
     }
 
-    const [product] = await db('products')
+    const [product] = await this.db('products')
       .where({ id })
       .update({
         ...data,
@@ -44,14 +46,14 @@ export class ProductService {
   }
 
   async deleteProduct(id: number): Promise<void> {
-    const deleted = await db('products').where({ id }).del();
+    const deleted = await this.db('products').where({ id }).del();
     if (!deleted) {
       throw new Error('Product not found');
     }
   }
 
   async getActiveProductsByCategory(categoryId: number): Promise<ProductWithCategory[]> {
-    return db('products as p')
+    return this.db('products as p')
       .select(
         'p.*',
         'c.name as category_name'
@@ -64,24 +66,24 @@ export class ProductService {
   }
 
   async getProductsGroupedByCategories(): Promise<any[]> {
-    const categories = await db('categories as c')
+    const categories = await this.db('categories as c')
       .select(
         'c.id',
         'c.name',
         'c.level',
         'c.parent_id',
-        db.raw('COALESCE(COUNT(p.id), 0) as product_count')
+        this.db.raw('COALESCE(COUNT(p.id), 0) as product_count')
       )
       .leftJoin('products as p', function() {
         this.on('c.id', '=', 'p.category_id')
-          .andOn('p.is_active', '=', db.raw('true'));
+          .andOn('p.is_active', '=', 'true');
       })
       .where('c.is_active', true)
       .groupBy('c.id')
       .orderBy('c.level', 'asc')
       .orderBy('c.name', 'asc');
 
-    const products = await db('products as p')
+    const products = await this.db('products as p')
       .select(
         'p.*',
         'c.name as category_name',
@@ -97,15 +99,15 @@ export class ProductService {
     return {
       categories,
       products,
-    };
+    } as any;
   }
 
   async getProductById(id: number): Promise<Product | null> {
-    return db('products').where({ id }).first();
+    return this.db('products').where({ id }).first();
   }
 
   async getProductCountByCategory(categoryId: number): Promise<number> {
-    const result = await db('products')
+    const result = await this.db('products')
       .where({ category_id: categoryId, is_active: true })
       .count('id as count')
       .first();

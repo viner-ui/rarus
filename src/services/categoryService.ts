@@ -1,7 +1,9 @@
-import { db } from '../config/database';
 import { Category, CategoryWithProductCount, CategoryTree, CreateCategoryRequest, UpdateCategoryRequest } from '../types';
+import { Knex } from 'knex';
 
 export class CategoryService {
+  constructor(private db: Knex) {}
+
   async createCategory(data: CreateCategoryRequest): Promise<Category> {
     const parentLevel = data.parent_id ? await this.getCategoryLevel(data.parent_id) : 0;
     
@@ -9,7 +11,7 @@ export class CategoryService {
       throw new Error('Maximum nesting level is 3');
     }
 
-    const [category] = await db('categories')
+    const [category] = await this.db('categories')
       .insert({
         ...data,
         level: parentLevel + 1,
@@ -31,10 +33,10 @@ export class CategoryService {
         throw new Error('Maximum nesting level is 3');
       }
       
-      data.level = parentLevel + 1;
+      (data as any).level = parentLevel + 1;
     }
 
-    const [category] = await db('categories')
+    const [category] = await this.db('categories')
       .where({ id })
       .update({
         ...data,
@@ -50,31 +52,31 @@ export class CategoryService {
   }
 
   async deleteCategory(id: number): Promise<void> {
-    const hasChildren = await db('categories').where({ parent_id: id }).first();
+    const hasChildren = await this.db('categories').where({ parent_id: id }).first();
     if (hasChildren) {
       throw new Error('Cannot delete category with children');
     }
 
-    const hasProducts = await db('products').where({ category_id: id }).first();
+    const hasProducts = await this.db('products').where({ category_id: id }).first();
     if (hasProducts) {
       throw new Error('Cannot delete category with products');
     }
 
-    const deleted = await db('categories').where({ id }).del();
+    const deleted = await this.db('categories').where({ id }).del();
     if (!deleted) {
       throw new Error('Category not found');
     }
   }
 
   async getActiveCategories(): Promise<CategoryWithProductCount[]> {
-    return db('categories as c')
+    return this.db('categories as c')
       .select(
         'c.*',
-        db.raw('COALESCE(COUNT(p.id), 0) as product_count')
+        this.db.raw('COALESCE(COUNT(p.id), 0) as product_count')
       )
       .leftJoin('products as p', function() {
         this.on('c.id', '=', 'p.category_id')
-          .andOn('p.is_active', '=', db.raw('true'));
+          .andOn('p.is_active', '=', 'true');
       })
       .where('c.is_active', true)
       .groupBy('c.id')
@@ -83,7 +85,7 @@ export class CategoryService {
   }
 
   async getCategoryById(id: number): Promise<Category | null> {
-    return db('categories').where({ id }).first();
+    return this.db('categories').where({ id }).first();
   }
 
   async getCategoryTree(): Promise<CategoryTree[]> {
@@ -92,7 +94,7 @@ export class CategoryService {
   }
 
   private async getCategoryLevel(id: number): Promise<number> {
-    const category = await db('categories').where({ id }).first();
+    const category = await this.db('categories').where({ id }).first();
     if (!category) {
       throw new Error('Parent category not found');
     }
